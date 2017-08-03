@@ -12,6 +12,7 @@
 #include "cJSON.h"
 #include "pool.h"
 #include "systools.h"
+#include "nvram.h"
 
 #define NET_SERVER_FILE_LOCK			"/var/server.lock"		//¿ª»úÁªÍø½ø³ÌÎÄ¼şËø
 
@@ -236,9 +237,23 @@ int initAddrNet(void){
 }
 
 int main(int argc,char **argv){
+	if(argc<2){
+		return -1;
+	}
 	initAddrNet();
 	createInternetLock();	//ä¸ŠåŠæ®µä¸Šæ–‡ä»¶é”
-	RunSmartConfig_Task();
-	CheckNetWork_taskRunState(NULL);
+	if(!strcmp(argv[1],"restart")){
+		char wifiBuf[128]={0};
+		char passwdBuf[64]={0};
+		char *wifi = nvram_bufget(RT2860_NVRAM, "ApCliSsid");
+		snprintf(wifiBuf,128,"%s",wifi);
+		char *passwd = nvram_bufget(RT2860_NVRAM, "ApCliWPAPSK");
+		snprintf(passwdBuf,64,"%s",passwd);
+		SendSsidPasswd_toNetServer(wifiBuf,passwdBuf,1);//å·²ç»æ¥æ”¶åˆ°ssid å’Œ passwd
+		CheckNetWork_taskRunState(NULL);
+	}else{
+		RunSmartConfig_Task();
+		CheckNetWork_taskRunState(NULL);
+	}
 	return 0;
 }
